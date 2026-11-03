@@ -1,0 +1,186 @@
+{
+  "name": "Assignment - Nested JSON and HTTP Integration",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "7ed6f204-c89a-4a5b-aba4-6b8e923325c3",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = { customer: { id: \"CUST-101\", name: \"Priya Sharma\", email: \"priya@example.com\", address: { city: \"Pune\", state: \"Maharashtra\", country: \"India\" } }, order: { id: \"ORD-1001\", status: \"confirmed\", items: [{ sku: \"LAP-01\", name: \"Laptop\", quantity: 1, price: 45000 }, { sku: \"MOU-02\", name: \"Mouse\", quantity: 2, price: 500 }], payment: { method: \"UPI\", paid: true } } }; return [{ json: payload }];"
+      },
+      "id": "9d94dba4-7b63-45fd-8824-3f7d0831d383",
+      "name": "Create Nested JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a",
+              "name": "customer_name",
+              "value": "={{ $json.customer.name }}",
+              "type": "string"
+            },
+            {
+              "id": "b",
+              "name": "customer_email",
+              "value": "={{ $json.customer.email }}",
+              "type": "string"
+            },
+            {
+              "id": "c",
+              "name": "city",
+              "value": "={{ $json.customer.address.city }}",
+              "type": "string"
+            },
+            {
+              "id": "d",
+              "name": "order_id",
+              "value": "={{ $json.order.id }}",
+              "type": "string"
+            },
+            {
+              "id": "e",
+              "name": "first_item",
+              "value": "={{ $json.order.items[0].name }}",
+              "type": "string"
+            },
+            {
+              "id": "f",
+              "name": "second_item_quantity",
+              "value": "={{ $json.order.items[1].quantity }}",
+              "type": "number"
+            },
+            {
+              "id": "g",
+              "name": "total_amount",
+              "value": "={{ $json.order.items.reduce((sum, item) => sum + item.quantity * item.price, 0) }}",
+              "type": "number"
+            },
+            {
+              "id": "h",
+              "name": "payment_method",
+              "value": "={{ $json.order.payment.method }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c94150ff-cb66-4ac6-b8b3-8550169c4072",
+      "name": "Edit Fields - Extract and Transform",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        464,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://postman-echo.com/post",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "02124977-e754-4d69-b1ca-93db7b4ca619",
+      "name": "HTTP Request - Send JSON",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        704,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(item => { const response = item.json; const sent = response.data || response.json || {}; const checks = { customer_name: sent.customer_name === \"Priya Sharma\", city: sent.city === \"Pune\", first_item: sent.first_item === \"Laptop\", second_item_quantity: Number(sent.second_item_quantity) === 2, total_amount: Number(sent.total_amount) === 46000 }; return { json: { validation_status: Object.values(checks).every(Boolean) ? \"PASSED\" : \"FAILED\", checks, sent_payload: sent, message: \"Nested JSON extraction, Set node mapping and HTTP response checked\" } }; });"
+      },
+      "id": "d63c540b-da1a-4c90-8a57-bf41efb5427b",
+      "name": "Validate API Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        944,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Create Nested JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Nested JSON": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields - Extract and Transform",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields - Extract and Transform": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Send JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Send JSON": {
+      "main": [
+        [
+          {
+            "node": "Validate API Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "b1b8c172-ad13-4f84-9401-970322ae4ce1",
+  "meta": {
+    "instanceId": "a03c7678428ef19ededbf912f16f7d5798ec7b9ab4c17f2a2def6a9e791e7215"
+  },
+  "nodeGroups": [],
+  "id": "ef0y1LAOiYUVmWAt",
+  "tags": []
+}
